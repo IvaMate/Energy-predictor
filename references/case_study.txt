@@ -1,0 +1,12 @@
+
+https://medium.com/analytics-vidhya/ashrae-great-energy-predictor-iii-a-machine-learning-case-study-a01a67eb048d
+
+Task:
+Given the historic energy usage of more than 1400 buildings over a span of 1 year, 
+predict the future energy usage. This will then be compared to the actual energy usage
+with efficiency process to understand the cost and energy savings.
+
+Approach:
+- energy forecasting problem -> regression problem
+- use 1 year worth of data and predict 2 years 
+- Evaluation metric: Root Mean Square Logarithmic Error (RMSLE)
