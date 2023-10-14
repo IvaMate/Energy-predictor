@@ -2,9 +2,6 @@
 venv
 *.code-workspace
 /data/
-/src/data/__init__.py
-/src/data/make_data.py
-/src/data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
