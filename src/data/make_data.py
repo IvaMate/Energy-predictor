@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import holidays
+import os
 
 def nan_fillers(df):
   air_temp_df=df.groupby(['site_id', 'day', 'month'])['air_temperature'].transform('mean')
@@ -26,10 +27,11 @@ def nan_fillers(df):
   wind_speed_df=df.groupby(['site_id', 'day', 'month'])['wind_speed'].transform('mean')
   df['wind_speed'].fillna(wind_speed_df, inplace=True)
   return df
-
-
-#Load
-train_df=pd.read_csv(r'C:\Users\imate\Documents\24.9.Notebooks_training\Final-pipeline\data\0_raw\0_merged_train.csv')#Remove outlier
+#Load TRAIN
+base_path = r"C:\Users\imate\Documents\24.9.Notebooks_training\Energy-predictor\data\0_raw"
+train_file = os.path.join(base_path, "0_merged_train.csv")
+train_df=pd.read_csv(train_file)
+#Remove outlier
 train_df = train_df.drop(train_df[train_df['building_id'] == 1381].index)
 #drop bad quality features
 train_df.drop(['year_built', 'floor_count'], axis=1,inplace=True)
@@ -39,10 +41,11 @@ train_df['cloud_coverage'].fillna(train_df['cloud_coverage'].median(), inplace=T
 train_df['sea_level_pressure'].fillna(train_df['sea_level_pressure'].median(), inplace=True)
 train_df['precip_depth_1_hr'].fillna(train_df['precip_depth_1_hr'].median(), inplace=True)
 #Output
-train_df.to_csv(r'C:\Users\imate\Documents\24.9.Notebooks_training\Final-pipeline\data\1_interim\1_cleaned_train.csv', index=False)
+train_df.to_csv(r'C:\Users\imate\Documents\24.9.Notebooks_training\Energy-predictor\data\1_interim\1_cleaned_train.csv', index=False)
 
-
-test_df=pd.read_csv(r'C:\Users\imate\Documents\24.9.Notebooks_training\Final-pipeline\data\0_raw\0_merged_test.csv')#Remove outlier
+#load TEST
+test_file = os.path.join(base_path, "0_merged_test.csv")
+test_df=pd.read_csv(test_file)
 #drop bad quality features
 test_df.drop(['year_built', 'floor_count'], axis=1,inplace=True)
 #Missing values and NaN values
@@ -51,5 +54,5 @@ test_df['cloud_coverage'].fillna(test_df['cloud_coverage'].median(), inplace=Tru
 test_df['sea_level_pressure'].fillna(test_df['sea_level_pressure'].median(), inplace=True)
 test_df['precip_depth_1_hr'].fillna(test_df['precip_depth_1_hr'].median(), inplace=True)
 #Output
-test_df.to_csv(r'C:\Users\imate\Documents\24.9.Notebooks_training\Final-pipeline\data\1_interim\1_cleaned_test.csv', index=False)
+test_df.to_csv(r'C:\Users\imate\Documents\24.9.Notebooks_training\Energy-predictor\data\1_interim\1_cleaned_test.csv', index=False)
 

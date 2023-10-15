@@ -3,10 +3,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import holidays
-
+import os
 
 #Load
-train_df=pd.read_csv(r'C:\Users\imate\Documents\24.9.Notebooks_training\Final-pipeline\data\1_interim\1_cleaned_train.csv')
+base_path = r"C:\Users\imate\Documents\24.9.Notebooks_training\Energy-predictor\data\1_interim"
+train_file = os.path.join(base_path, "1_cleaned_train.csv")
+train_df=pd.read_csv(train_file)
 
 
 location_df= pd.DataFrame()
@@ -83,14 +85,13 @@ train_df['relative_humidity']= 100*((np.exp((17.67*train_df['dew_temperature'])/
                                                                                           (243.5+train_df['air_temperature']))))
 
 #Output
-train_df.to_csv(r'C:\Users\imate\Documents\24.9.Notebooks_training\Final-pipeline\data\1_interim\2_fe_train.csv', index=False)
+train_df.to_csv(r'C:\Users\imate\Documents\24.9.Notebooks_training\Energy-predictor\data\2_processed\2_fe_train.csv', index=False)
 
 ##########################################################################################
-test_df=pd.read_csv(r'C:\Users\imate\Documents\24.9.Notebooks_training\Final-pipeline\data\1_interim\1_cleaned_test.csv')
+test_file = os.path.join(base_path, "1_cleaned_test.csv")
+test_df=pd.read_csv(test_file)
+test_df['timestamp'] = pd.to_datetime(test_df['timestamp'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
 test_df= holiday_filler(test_df)
-
-test_df['timestamp'] = pd.to_datetime(test_df['timestamp'])
-
 #adding features in test data
 test_df['season']= test_df['timestamp'].apply(lambda x: 'Spring' if x.month==3 or x.month==4 or x.month==5 else 'Summer' if x.month==6 or x.month==7 or x.month==8 
                                                 else 'Autumn' if x.month==9 or x.month==10 or 
@@ -101,4 +102,4 @@ test_df=test_df.merge(location_df, on='site_id', how='left')
 test_df= holiday_filler(test_df)
 test_df['square_feet']=np.log1p(test_df['square_feet'])
 test_df.drop(['city','country'], axis=1, inplace=True)
-test_df.to_csv(r'C:\Users\imate\Documents\24.9.Notebooks_training\Final-pipeline\data\1_interim\2_fe_test.csv', index=False)
+test_df.to_csv(r'C:\Users\imate\Documents\24.9.Notebooks_training\Energy-predictor\data\2_processed\2_fe_test.csv', index=False)
