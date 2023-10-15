@@ -158,8 +158,8 @@ vif["VIF Factor"] = [variance_inflation_factor(s.values, i) for i in range(s.sha
 vif["features"] = s.columns
 
 import pyarrow 
-X_train.drop(['site_id', 'dew_temperature','timestamp','year','dayofyear'],axis=1,inplace=True)
-X_cv.drop(['site_id', 'dew_temperature','timestamp','year','dayofyear'],axis=1,inplace=True)
+X_train.drop(['site_id', 'dew_temperature','timestamp','year','dayofyear','city','country'],axis=1,inplace=True)
+X_cv.drop(['site_id', 'dew_temperature','timestamp','year','dayofyear','city','country'],axis=1,inplace=True)
 test_df.drop(['site_id', 'dew_temperature','timestamp','year','dayofyear'],axis=1,inplace=True)
 #Saving final data in files
 test_df.to_feather(r'C:\Users\imate\Documents\24.9.Notebooks_training\Energy-predictor\data\2_processed\2_test.ftr')
