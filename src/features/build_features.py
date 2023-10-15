@@ -4,6 +4,24 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import holidays
 import os
+import math
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import normalize
+from sklearn.metrics import confusion_matrix, f1_score
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.model_selection import RandomizedSearchCV
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import RandomForestRegressor
+import pickle
+import joblib
+from sklearn.metrics import mean_squared_error
+from sklearn.ensemble import AdaBoostRegressor
+import os
+
+
+
 
 #Load
 base_path = r"C:\Users\imate\Documents\24.9.Notebooks_training\Energy-predictor\data\1_interim"
@@ -83,15 +101,15 @@ train_df['IsDayTime']= train_df['timestamp'].apply(lambda x: 1 if x.hour >=6 and
 train_df['relative_humidity']= 100*((np.exp((17.67*train_df['dew_temperature'])/
                                             (243.5+train_df['dew_temperature'])))/(np.exp((17.67*train_df['air_temperature'])/
                                                                                           (243.5+train_df['air_temperature']))))
-
+train_df['square_feet']=np.log1p(train_df['square_feet'])
 #Output
-train_df.to_csv(r'C:\Users\imate\Documents\24.9.Notebooks_training\Energy-predictor\data\2_processed\2_fe_train.csv', index=False)
+#train_df.to_csv(r'C:\Users\imate\Documents\24.9.Notebooks_training\Energy-predictor\data\2_processed\2_fe_train.csv', index=False)
 
 ##########################################################################################
 test_file = os.path.join(base_path, "1_cleaned_test.csv")
 test_df=pd.read_csv(test_file)
 test_df['timestamp'] = pd.to_datetime(test_df['timestamp'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
-test_df= holiday_filler(test_df)
+
 #adding features in test data
 test_df['season']= test_df['timestamp'].apply(lambda x: 'Spring' if x.month==3 or x.month==4 or x.month==5 else 'Summer' if x.month==6 or x.month==7 or x.month==8 
                                                 else 'Autumn' if x.month==9 or x.month==10 or 
@@ -102,4 +120,53 @@ test_df=test_df.merge(location_df, on='site_id', how='left')
 test_df= holiday_filler(test_df)
 test_df['square_feet']=np.log1p(test_df['square_feet'])
 test_df.drop(['city','country'], axis=1, inplace=True)
-test_df.to_csv(r'C:\Users\imate\Documents\24.9.Notebooks_training\Energy-predictor\data\2_processed\2_fe_test.csv', index=False)
+#test_df.to_csv(r'C:\Users\imate\Documents\24.9.Notebooks_training\Energy-predictor\data\2_processed\2_fe_test.csv', index=False)
+
+###################Preprocessing
+y_pred_df= train_df.groupby(['site_id', 'primary_use'])['meter_reading'].mean().reset_index()
+train_df=train_df.sort_values(by='timestamp')
+X_train, X_cv= train_test_split(train_df, test_size=0.20, shuffle=False)
+
+#y_pred for baseline
+y_pred_df.rename(columns={"meter_reading": "y_pred_base"}, inplace=True)
+X_train= X_train.merge(y_pred_df, on=['site_id', 'primary_use'], how='left')
+X_cv= X_cv.merge(y_pred_df,on=['site_id', 'primary_use'], how='left')
+#Label encoding primary use variables
+from sklearn.preprocessing import LabelEncoder
+
+label_enc= LabelEncoder()
+label_enc.fit(train_df['primary_use'])
+X_train['primary_use']= label_enc.transform(X_train['primary_use'])
+X_cv['primary_use']= label_enc.transform(X_cv['primary_use'])
+label_enc.fit(test_df['primary_use'])
+test_df['primary_use']= label_enc.transform(test_df['primary_use'])
+label_enc.fit(train_df['season'])
+
+X_train['season']= label_enc.transform(X_train['season'])
+X_cv['season']= label_enc.transform(X_cv['season'])
+test_df['season']= label_enc.transform(test_df['season'])
+y_readings_tr=X_train['meter_reading']
+y_readings_cv=X_cv['meter_reading']
+
+X_train.drop(['meter_reading', 'y_pred_base'], axis=1, inplace=True)
+X_cv.drop(['meter_reading', 'y_pred_base'], axis=1, inplace=True)
+
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+s=X_train._get_numeric_data()
+vif = pd.DataFrame()
+vif["VIF Factor"] = [variance_inflation_factor(s.values, i) for i in range(s.shape[1])]
+vif["features"] = s.columns
+
+import pyarrow 
+X_train.drop(['site_id', 'dew_temperature','timestamp','year','dayofyear'],axis=1,inplace=True)
+X_cv.drop(['site_id', 'dew_temperature','timestamp','year','dayofyear'],axis=1,inplace=True)
+test_df.drop(['site_id', 'dew_temperature','timestamp','year','dayofyear'],axis=1,inplace=True)
+#Saving final data in files
+test_df.to_feather(r'C:\Users\imate\Documents\24.9.Notebooks_training\Energy-predictor\data\2_processed\2_test.ftr')
+#Converting pandas series to numpy
+y_readings_tr=y_readings_tr.to_numpy()
+y_readings_cv=y_readings_cv.to_numpy()
+X_train.to_feather(r'C:\Users\imate\Documents\24.9.Notebooks_training\Energy-predictor\data\2_processed\2_X_train_new.ftr')
+X_cv.to_feather(r'C:\Users\imate\Documents\24.9.Notebooks_training\Energy-predictor\data\2_processed\2_X_cv_new.ftr')
+np.save(r'C:\Users\imate\Documents\24.9.Notebooks_training\Energy-predictor\reports\y_readings_tr_new.npy', y_readings_tr)
+np.save(r'C:\Users\imate\Documents\24.9.Notebooks_training\Energy-predictor\reports\y_readings_cv_new.npy',y_readings_cv)
